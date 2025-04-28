@@ -113,22 +113,26 @@ contract RabbitSponsoredFarm is
     }
 
     function stake(uint256 tokenId) external override nonReentrant {
+        // Checks
         require(_positionOwner[tokenId] == address(0), "Already staked");
         require(
             _nonfungiblePositionManager.ownerOf(tokenId) == msg.sender,
             "Not owner"
         );
 
+        // Effects
+        _positionOwner[tokenId] = msg.sender;
+        _positionLastHarvestBlock[tokenId] = block.number;
+        _totalStaked++;
+
+        // Interactions
         _nonfungiblePositionManager.transferFrom(
             msg.sender,
             address(this),
             tokenId
         );
 
-        _positionOwner[tokenId] = msg.sender;
-        _positionLastHarvestBlock[tokenId] = block.number;
-
-        _totalStaked++;
+        // Events
         emit PositionStaked(msg.sender, tokenId, block.number, block.timestamp);
     }
 
@@ -153,6 +157,7 @@ contract RabbitSponsoredFarm is
     }
 
     function _harvest(HarvestParams calldata params, address to) internal {
+        // Checks
         require(block.number >= params.blockNumber, "Block not reached");
         require(
             _positionLastHarvestBlock[params.tokenId] <= params.blockNumber,
@@ -187,12 +192,16 @@ contract RabbitSponsoredFarm is
             "Insufficient farm rewards"
         );
 
+        // Effects
         _positionLastHarvestBlock[params.tokenId] = block.number;
         _positionTotalClaimed[params.tokenId][params.farmId] = params
             .totalClaimable;
         _farms[params.farmId].totalClaimed += harvestAmount;
 
+        // Interactions
         farm.rewardToken.safeTransfer(to, harvestAmount);
+
+        // Events
         emit RewardHarvested(
             to,
             params.tokenId,
@@ -204,11 +213,18 @@ contract RabbitSponsoredFarm is
     }
 
     function _unstake(uint256 tokenId, address to) internal {
+        // Checks
+        require(_positionOwner[tokenId] == msg.sender, "Not owner");
+
+        // Effects
         delete _positionOwner[tokenId];
         delete _positionLastHarvestBlock[tokenId];
         _totalStaked--;
 
+        // Interactions
         _nonfungiblePositionManager.transferFrom(address(this), to, tokenId);
+
+        // Events
         emit PositionUnstaked(to, tokenId, block.number, block.timestamp);
     }
 
@@ -216,12 +232,18 @@ contract RabbitSponsoredFarm is
         uint256 farmId,
         uint256 amount
     ) external override onlyOwner {
+        // Checks
         require(amount > 0, "Amount must be greater than 0");
         Farm memory farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
-        farm.rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+        // Effects
         _farms[farmId].totalClaimable += amount;
+
+        // Interactions
+        farm.rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+
+        // Events
         emit RewardDeposited(farmId, amount);
     }
 
@@ -229,12 +251,16 @@ contract RabbitSponsoredFarm is
         uint256 farmId,
         address _signer
     ) external override onlyOwner {
+        // Checks
         require(_signer != address(0), "Invalid signer");
         Farm memory farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
+        // Effects
         address oldSigner = farm.signer;
         _farms[farmId].signer = _signer;
+
+        // Events
         emit SignerUpdated(farmId, oldSigner, _signer);
     }
 
@@ -242,29 +268,41 @@ contract RabbitSponsoredFarm is
         uint256 farmId,
         uint256 rewardPerBlock
     ) external override onlyOwner {
+        // Checks
         Farm memory farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
+        // Effects
         uint256 oldRewardPerBlock = farm.rewardPerBlock;
         _farms[farmId].rewardPerBlock = rewardPerBlock;
+
+        // Events
         emit RewardPerBlockUpdated(farmId, oldRewardPerBlock, rewardPerBlock);
     }
 
     function activateFarm(uint256 farmId) external override onlyOwner {
+        // Checks
         Farm memory farm = _farms[farmId];
         require(!farm.active, "Farm already active");
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
+        // Effects
         _farms[farmId].active = true;
+
+        // Events
         emit FarmActivated(farmId);
     }
 
     function deactivateFarm(uint256 farmId) external override onlyOwner {
+        // Checks
         Farm memory farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
         require(farm.active, "Farm already inactive");
 
+        // Effects
         _farms[farmId].active = false;
+
+        // Events
         emit FarmDeactivated(farmId);
     }
 }
