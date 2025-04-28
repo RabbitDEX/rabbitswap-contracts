@@ -1,5 +1,6 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
+import "hardhat-gas-reporter";
 
 // May need to disable this when verifying contracts
 import "@openzeppelin/hardhat-upgrades";
@@ -58,6 +59,9 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  gasReporter: {
+    enabled: true,
   },
 };
 

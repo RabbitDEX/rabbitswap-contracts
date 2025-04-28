@@ -164,7 +164,7 @@ contract RabbitSponsoredFarm is
             "Invalid block number"
         );
 
-        Farm memory farm = _farms[params.farmId];
+        Farm storage farm = _farms[params.farmId];
         require(farm.active, "Farm not active");
 
         bytes32 structHash = keccak256(
@@ -196,7 +196,7 @@ contract RabbitSponsoredFarm is
         _positionLastHarvestBlock[params.tokenId] = block.number;
         _positionTotalClaimed[params.tokenId][params.farmId] = params
             .totalClaimable;
-        _farms[params.farmId].totalClaimed += harvestAmount;
+        farm.totalClaimed += harvestAmount;
 
         // Interactions
         farm.rewardToken.safeTransfer(to, harvestAmount);
@@ -234,11 +234,11 @@ contract RabbitSponsoredFarm is
     ) external override onlyOwner {
         // Checks
         require(amount > 0, "Amount must be greater than 0");
-        Farm memory farm = _farms[farmId];
+        Farm storage farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
         // Effects
-        _farms[farmId].totalClaimable += amount;
+        farm.totalClaimable += amount;
 
         // Interactions
         farm.rewardToken.safeTransferFrom(msg.sender, address(this), amount);
@@ -253,12 +253,12 @@ contract RabbitSponsoredFarm is
     ) external override onlyOwner {
         // Checks
         require(_signer != address(0), "Invalid signer");
-        Farm memory farm = _farms[farmId];
+        Farm storage farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
         // Effects
         address oldSigner = farm.signer;
-        _farms[farmId].signer = _signer;
+        farm.signer = _signer;
 
         // Events
         emit SignerUpdated(farmId, oldSigner, _signer);
@@ -269,12 +269,12 @@ contract RabbitSponsoredFarm is
         uint256 rewardPerBlock
     ) external override onlyOwner {
         // Checks
-        Farm memory farm = _farms[farmId];
+        Farm storage farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
         // Effects
         uint256 oldRewardPerBlock = farm.rewardPerBlock;
-        _farms[farmId].rewardPerBlock = rewardPerBlock;
+        farm.rewardPerBlock = rewardPerBlock;
 
         // Events
         emit RewardPerBlockUpdated(farmId, oldRewardPerBlock, rewardPerBlock);
@@ -282,12 +282,12 @@ contract RabbitSponsoredFarm is
 
     function activateFarm(uint256 farmId) external override onlyOwner {
         // Checks
-        Farm memory farm = _farms[farmId];
+        Farm storage farm = _farms[farmId];
         require(!farm.active, "Farm already active");
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
 
         // Effects
-        _farms[farmId].active = true;
+        farm.active = true;
 
         // Events
         emit FarmActivated(farmId);
@@ -295,12 +295,12 @@ contract RabbitSponsoredFarm is
 
     function deactivateFarm(uint256 farmId) external override onlyOwner {
         // Checks
-        Farm memory farm = _farms[farmId];
+        Farm storage farm = _farms[farmId];
         require(address(farm.rewardToken) != address(0), "Farm does not exist");
         require(farm.active, "Farm already inactive");
 
         // Effects
-        _farms[farmId].active = false;
+        farm.active = false;
 
         // Events
         emit FarmDeactivated(farmId);
