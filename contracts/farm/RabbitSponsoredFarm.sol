@@ -79,7 +79,7 @@ contract RabbitSponsoredFarm is
 
     function initialize(
         INonfungiblePositionManager nftManager
-    ) public initializer {
+    ) external initializer {
         require(address(nftManager) != address(0), "Invalid NFT manager");
         _nonfungiblePositionManager = nftManager;
         __Context_init();
