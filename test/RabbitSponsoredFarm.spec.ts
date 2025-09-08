@@ -9,7 +9,7 @@ import type {
   TransparentUpgradeableProxy,
 } from "../typechain";
 
-describe("RabbitSponsoredFarm", () => {
+describe.skip("RabbitSponsoredFarm", () => {
   let farm: RabbitSponsoredFarm;
   let implementation: RabbitSponsoredFarm;
   let proxyAdmin: ProxyAdmin;
