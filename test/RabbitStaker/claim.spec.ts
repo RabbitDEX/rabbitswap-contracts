@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { deployRabbitStakerFixture, TestFixture, approveAndDeposit } from "./shared/setup";
+import { deployRabbitStakerFixture, TestFixture, approveAndDeposit, approveSRabbitAndWithdraw } from "./shared/setup";
 
 describe("RabbitStaker - Claim Functionality", function () {
   let fixture: TestFixture;
@@ -12,14 +12,14 @@ describe("RabbitStaker - Claim Functionality", function () {
   describe("Single Claim Operations", function () {
     beforeEach(async function () {
       // Setup initial deposits and withdrawals for claim tests
-      const { rabbitStaker, rabbitToken, user1, user2 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
       await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
       
       // Create some withdrawals with short vesting periods for quick testing
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("200"), 15); // ID 0
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("150"), 30); // ID 1
-      await rabbitStaker.connect(user2).withdraw(ethers.parseEther("100"), 20); // ID 0
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 15); // ID 0
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 30); // ID 1
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user2, ethers.parseEther("100"), 20); // ID 0
     });
 
     it("should allow claiming after vesting period completes", async function () {
@@ -99,14 +99,14 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("ClaimAll Functionality", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1, user2 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
       await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
       
       // Create multiple withdrawals with different vesting periods
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("100"), 15); // ID 0 - ready first
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("150"), 20); // ID 1 - ready second  
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("200"), 45); // ID 2 - ready later
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15); // ID 0 - ready first
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 20); // ID 1 - ready second  
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 45); // ID 2 - ready later
     });
 
     it("should claim all available withdrawals in single transaction", async function () {
@@ -151,7 +151,7 @@ describe("RabbitStaker - Claim Functionality", function () {
       const { rabbitStaker, user1 } = fixture;
       
       // Don't fast forward time - no withdrawals should be claimable yet
-      const claimableIds = await rabbitStaker.getClaimableWithdrawalIds(user1.address);
+      const claimableIds = await rabbitStaker.getClaimableWithdrawalIds(await user1.getAddress());
       expect(claimableIds.length).to.equal(0);
       
       await expect(rabbitStaker.connect(user1).claimAll())
@@ -176,14 +176,14 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("ClaimMultiple Functionality", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
       
       // Create multiple withdrawals
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("100"), 15); // ID 0
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("150"), 20); // ID 1
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("200"), 25); // ID 2
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("80"), 30);  // ID 3
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15); // ID 0
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 20); // ID 1
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 25); // ID 2
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("80"), 30);  // ID 3
     });
 
     it("should claim specific withdrawals by ID array", async function () {
@@ -255,14 +255,14 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("View Functions", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1, user2 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
       await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
       
       // Create withdrawals with different vesting periods
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("100"), 15); // Ready soon
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("150"), 45); // Ready later
-      await rabbitStaker.connect(user2).withdraw(ethers.parseEther("80"), 20);  // Different user
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15); // Ready soon
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 45); // Ready later
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user2, ethers.parseEther("80"), 20);  // Different user
     });
 
     it("should return correct claimable withdrawal IDs", async function () {
@@ -337,9 +337,9 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("Error Cases", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1, user2 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("200"), 30);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 30);
     });
 
     it("should revert on invalid withdrawal ID", async function () {
@@ -399,10 +399,10 @@ describe("RabbitStaker - Claim Functionality", function () {
     });
 
     it("should revert on claimMultiple with already claimed withdrawal", async function () {
-      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1 } = fixture;
       
       // Create second withdrawal
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("100"), 15);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15);
       
       await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60 + 1]); // 30 days
       await ethers.provider.send("evm_mine", []);
@@ -416,10 +416,10 @@ describe("RabbitStaker - Claim Functionality", function () {
     });
 
     it("should revert on claimMultiple with not yet vested withdrawal", async function () {
-      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1 } = fixture;
       
       // Create second withdrawal with longer vesting
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("100"), 60);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 60);
       
       // Fast forward only enough for first withdrawal
       await ethers.provider.send("evm_increaseTime", [30 * 24 * 60 * 60 + 1]); // 30 days
@@ -433,12 +433,12 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("State Validation", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1, user2 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
       await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
       
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("200"), 20);
-      await rabbitStaker.connect(user2).withdraw(ethers.parseEther("150"), 25);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 20);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user2, ethers.parseEther("150"), 25);
     });
 
     it("should update total locked RABBIT correctly after claims", async function () {
@@ -506,9 +506,9 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("Event Emission", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("200"), 30);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 30);
     });
 
     it("should emit WithdrawalClaimed event with correct parameters", async function () {
@@ -525,10 +525,10 @@ describe("RabbitStaker - Claim Functionality", function () {
     });
 
     it("should emit multiple WithdrawalClaimed events for claimMultiple", async function () {
-      const { rabbitStaker, rabbitToken, user1, user1Address } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user1Address } = fixture;
       
       // Create second withdrawal
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("150"), 25);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 25);
       
       const withdrawal0 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
       const withdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
@@ -551,14 +551,14 @@ describe("RabbitStaker - Claim Functionality", function () {
 
   describe("Edge Cases", function () {
     beforeEach(async function () {
-      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1 } = fixture;
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
     });
 
     it("should handle claiming immediately after unlock time", async function () {
-      const { rabbitStaker, user1 } = fixture;
+      const { rabbitStaker, sRabbitToken, user1 } = fixture;
       
-      await rabbitStaker.connect(user1).withdraw(ethers.parseEther("100"), 15);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15);
       
       // Fast forward exactly to unlock time
       await ethers.provider.send("evm_increaseTime", [15 * 24 * 60 * 60]); // Exactly 15 days
@@ -570,10 +570,10 @@ describe("RabbitStaker - Claim Functionality", function () {
     });
 
     it("should handle claiming very small withdrawal amounts", async function () {
-      const { rabbitStaker, user1, user1Address } = fixture;
+      const { rabbitStaker, sRabbitToken, user1, user1Address } = fixture;
       
       const smallAmount = ethers.parseUnits("1", 12); // Very small amount
-      await rabbitStaker.connect(user1).withdraw(smallAmount, 15);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, smallAmount, 15);
       
       const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
       
@@ -590,10 +590,10 @@ describe("RabbitStaker - Claim Functionality", function () {
       const { rabbitStaker, user2 } = fixture;
       
       // user2 has no withdrawals
-      const claimableIds = await rabbitStaker.getClaimableWithdrawalIds(user2.address);
+      const claimableIds = await rabbitStaker.getClaimableWithdrawalIds(await user2.getAddress());
       expect(claimableIds.length).to.equal(0);
       
-      const claimableAmount = await rabbitStaker.getClaimableAmount(user2.address);
+      const claimableAmount = await rabbitStaker.getClaimableAmount(await user2.getAddress());
       expect(claimableAmount).to.equal(0);
       
       await expect(rabbitStaker.connect(user2).claimAll())

@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { Signer } from "ethers";
+import { ContractTransactionResponse, Signer } from "ethers";
 import { RabbitStaker, MockERC20, MockSRabbitToken } from "../../../typechain";
 
 export interface TestFixture {
@@ -75,4 +75,15 @@ export async function approveAndDeposit(
 ): Promise<void> {
   await rabbitToken.connect(user).approve(await rabbitStaker.getAddress(), amount);
   await rabbitStaker.connect(user).deposit(amount);
+}
+
+export async function approveSRabbitAndWithdraw(
+  sRabbitToken: MockSRabbitToken,
+  rabbitStaker: RabbitStaker,
+  user: Signer,
+  amount: bigint,
+  vestingDays: number
+): Promise<ContractTransactionResponse> {
+  await sRabbitToken.connect(user).approve(await rabbitStaker.getAddress(), amount);
+  return await rabbitStaker.connect(user).withdraw(amount, vestingDays);
 }
