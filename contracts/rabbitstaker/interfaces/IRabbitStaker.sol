@@ -10,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /// @title ISRabbitToken - Interface for sRABBIT token (VRC-25 with mint/burn)
 interface ISRabbitToken is IERC20 {
     function mint(address to, uint256 amount) external;
-    function burn(address from, uint256 amount) external;
+    function burn(uint256 amount) external;
 }
 
 /// @title IRabbitStaker - Interface for RABBIT staking with vesting withdrawals

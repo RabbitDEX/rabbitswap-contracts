@@ -11,7 +11,7 @@ contract MockSRabbitToken is ERC20, ISRabbitToken {
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 amount) external override {
-        _burn(from, amount);
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
     }
 }

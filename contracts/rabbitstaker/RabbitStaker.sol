@@ -175,7 +175,8 @@ contract RabbitStaker is
         // Update tracking state and burn sRABBIT
         _userWithdrawalCount[msg.sender]++;
         _totalLockedRabbit += rabbitAmount;
-        _sRabbitToken.burn(msg.sender, sRabbitAmount);
+        _sRabbitToken.transferFrom(msg.sender, address(this), sRabbitAmount);
+        _sRabbitToken.burn(sRabbitAmount);
         
         // Recalculate exchange rate following sRABBIT burn
         _updateRabbitPerShareAfterDeposit();
