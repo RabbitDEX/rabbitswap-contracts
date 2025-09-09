@@ -347,101 +347,204 @@ describe("RabbitStaker - Deposit Functionality", function () {
     });
   });
 
-  describe("Emission Rewards Integration", function () {
+  describe("Emission Per Block Mechanism", function () {
     beforeEach(async function () {
       // Reset emission to initial value for emission tests
       await fixture.rabbitStaker.setRabbitEmissionPerBlock(INITIAL_EMISSION_PER_BLOCK);
     });
 
-    it("should accumulate rewards and improve exchange rate", async function () {
-      const { rabbitStaker, rabbitToken, user1, user2 } = fixture;
+    it("should accumulate emission rewards when blocks pass", async function () {
+      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      
+      // Make initial deposit
+      const depositAmount = ethers.parseEther("1000");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, depositAmount);
+      
+      const initialPool = await rabbitStaker.totalRabbitInPool();
+      expect(initialPool).to.be.gte(depositAmount);
+      
+      // Mine blocks to accumulate emission
+      const blocksToMine = 5;
+      for (let i = 0; i < blocksToMine; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Make another deposit to trigger emission calculation
+      const secondDeposit = ethers.parseEther("100");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, secondDeposit);
+      
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      const expectedEmission = BigInt(blocksToMine) * INITIAL_EMISSION_PER_BLOCK;
+      
+      // Pool should have grown by at least the expected emission amount
+      const poolGrowth = finalPool - initialPool;
+      expect(poolGrowth).to.be.gte(secondDeposit + expectedEmission);
+    });
+
+    it("should not accumulate rewards when emission is zero", async function () {
+      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      
+      // Set emission to zero
+      await rabbitStaker.setRabbitEmissionPerBlock(0);
+      
+      // Make initial deposit
+      const depositAmount = ethers.parseEther("1000");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, depositAmount);
+      
+      const initialPool = await rabbitStaker.totalRabbitInPool();
+      expect(initialPool).to.be.gte(depositAmount);
+      
+      // Mine blocks
+      for (let i = 0; i < 20; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Make another deposit
+      const secondDeposit = ethers.parseEther("100");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, secondDeposit);
+      
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      const expectedTotal = initialPool + secondDeposit;
+      
+      // Pool should only contain deposits, no emission rewards
+      expect(finalPool).to.equal(expectedTotal);
+    });
+
+    it("should improve exchange rate when emission accumulates", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user2, user2Address } = fixture;
+      
       // Make initial deposit
       const initialDeposit = ethers.parseEther("1000");
       await approveAndDeposit(rabbitToken, rabbitStaker, user1, initialDeposit);
       
       const initialRate = await rabbitStaker.getRabbitPerShare();
       
-      // Mine blocks to accumulate rewards
+      // Mine blocks to accumulate emission
+      const blocksToMine = 15;
+      for (let i = 0; i < blocksToMine; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Make deposit to trigger rate update
+      const testDeposit = ethers.parseEther("200");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, testDeposit);
+      
+      const finalRate = await rabbitStaker.getRabbitPerShare();
+      
+      // Rate should have improved due to emission
+      expect(finalRate).to.be.gt(initialRate);
+      
+      // User should get less sRABBIT due to improved exchange rate
+      const actualSRabbit = await sRabbitToken.balanceOf(user2Address);
+      expect(actualSRabbit).to.be.lt(testDeposit);
+    });
+
+    it("should emit RabbitEmissionUpdated event when setting emission", async function () {
+      const { rabbitStaker } = fixture;
+      
+      const newEmission = ethers.parseEther("0.5");
+      
+      await expect(rabbitStaker.setRabbitEmissionPerBlock(newEmission))
+        .to.emit(rabbitStaker, "RabbitEmissionUpdated")
+        .withArgs(INITIAL_EMISSION_PER_BLOCK, newEmission);
+    });
+
+    it("should handle emission rate changes correctly", async function () {
+      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      
+      // Make initial deposit
+      const depositAmount = ethers.parseEther("1000");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, depositAmount);
+      
+      const initialPool = await rabbitStaker.totalRabbitInPool();
+      
+      // Mine blocks with initial emission rate
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Change emission rate
+      const newEmissionRate = ethers.parseEther("0.2");
+      await rabbitStaker.setRabbitEmissionPerBlock(newEmissionRate);
+      
+      // Mine more blocks with new emission rate
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Make deposit to trigger emission calculation
+      const secondDeposit = ethers.parseEther("100");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, secondDeposit);
+      
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      const expectedEmission = BigInt(5) * INITIAL_EMISSION_PER_BLOCK + BigInt(5) * newEmissionRate;
+      
+      // Pool should have grown by at least the expected emission amount
+      const poolGrowth = finalPool - initialPool;
+      expect(poolGrowth).to.be.gte(secondDeposit + expectedEmission);
+    });
+
+    it("should calculate sRABBIT amounts correctly with emission rewards", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user2, user2Address } = fixture;
+      
+      // Make initial deposit
+      const initialDeposit = ethers.parseEther("1000");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, initialDeposit);
+      
+      // Mine blocks to accumulate emission
       for (let i = 0; i < 10; i++) {
         await ethers.provider.send("evm_mine", []);
       }
       
-      // Make another deposit to trigger reward update
-      const secondDeposit = ethers.parseEther("500");
-      await approveAndDeposit(rabbitToken, rabbitStaker, user2, secondDeposit);
-      
-      const finalRate = await rabbitStaker.getRabbitPerShare();
-      
-      // Exchange rate should have improved due to rewards
-      expect(finalRate).to.be.gt(initialRate);
-      
-      // Pool should include deposits plus accumulated rewards
-      const totalPool = await rabbitStaker.totalRabbitInPool();
-      expect(totalPool).to.be.gt(initialDeposit + secondDeposit);
-      
-      // Calculate expected rewards (10 blocks * emission per block)
-      const expectedRewards = BigInt(10) * INITIAL_EMISSION_PER_BLOCK;
-      expect(totalPool).to.be.gte(initialDeposit + secondDeposit + expectedRewards);
-    });
-
-    it("should provide fewer sRABBIT when exchange rate improves", async function () {
-      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user2, user2Address } = fixture;
-      // Initial deposit
-      const depositAmount = ethers.parseEther("100");
-      await approveAndDeposit(rabbitToken, rabbitStaker, user1, depositAmount);
-      
-      // Mine blocks to improve exchange rate  
-      for (let i = 0; i < 20; i++) {
-        await ethers.provider.send("evm_mine", []);
-      }
-      
-      // Calculate expected sRABBIT amount BEFORE making the deposit
-      const expectedSRabbit = await rabbitStaker.calculateSRabbitAmount(depositAmount);
-      
-      // Second user deposit should get less sRABBIT due to improved rate
-      await rabbitToken.connect(user2).approve(await rabbitStaker.getAddress(), depositAmount);
-      await rabbitStaker.connect(user2).deposit(depositAmount);
-      
-      const user2SRabbitBalance = await sRabbitToken.balanceOf(user2Address);
-      
-      // Allow for rounding differences due to block timing and emission accumulation
-      const tolerance = ethers.parseEther("1"); // 1 token tolerance for emission tests
-      const difference = user2SRabbitBalance > expectedSRabbit 
-        ? user2SRabbitBalance - expectedSRabbit 
-        : expectedSRabbit - user2SRabbitBalance;
-      expect(difference).to.be.lte(tolerance);
-      expect(user2SRabbitBalance).to.be.lt(depositAmount); // Should get less than 1:1
-    });
-
-    it("should calculate correct sRABBIT amounts with accumulated rewards", async function () {
-      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user2, user2Address } = fixture;
-      // Initial setup
-      const initialDeposit = ethers.parseEther("1000");
-      await approveAndDeposit(rabbitToken, rabbitStaker, user1, initialDeposit);
-      
-      // Accumulate rewards
-      for (let i = 0; i < 15; i++) {
-        await ethers.provider.send("evm_mine", []);
-      }
-      
-      // Test calculation accuracy - calculate BEFORE deposit
+      // Calculate expected sRABBIT before deposit
       const testDeposit = ethers.parseEther("200");
       const calculatedSRabbit = await rabbitStaker.calculateSRabbitAmount(testDeposit);
       
-      await rabbitToken.connect(user2).approve(await rabbitStaker.getAddress(), testDeposit);
+      // Make the deposit
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, testDeposit);
       
-      const preBalance = await sRabbitToken.balanceOf(user2Address);
-      await rabbitStaker.connect(user2).deposit(testDeposit);
-      const postBalance = await sRabbitToken.balanceOf(user2Address);
+      const actualSRabbit = await sRabbitToken.balanceOf(user2Address);
       
-      const actualSRabbitMinted = postBalance - preBalance;
+      // Should be reasonably close to calculated amount (allowing for rounding)
+      const difference = actualSRabbit > calculatedSRabbit 
+        ? actualSRabbit - calculatedSRabbit 
+        : calculatedSRabbit - actualSRabbit;
+      expect(difference).to.be.lte(BigInt(1e17)); // 0.1 token precision
       
-      // Allow for rounding differences due to block timing and emission accumulation
-      const tolerance = ethers.parseEther("1"); // 1 token tolerance for emission tests
-      const difference = actualSRabbitMinted > calculatedSRabbit 
-        ? actualSRabbitMinted - calculatedSRabbit 
-        : calculatedSRabbit - actualSRabbitMinted;
-      expect(difference).to.be.lte(tolerance);
+      // Should get less than 1:1 due to improved exchange rate
+      expect(actualSRabbit).to.be.lt(testDeposit);
+    });
+
+    it("should handle multiple emission updates correctly", async function () {
+      const { rabbitStaker, rabbitToken, user1 } = fixture;
+      
+      // Make initial deposit
+      const depositAmount = ethers.parseEther("1000");
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, depositAmount);
+      
+      const initialPool = await rabbitStaker.totalRabbitInPool();
+      let totalEmission = 0n;
+      
+      // Multiple rounds of mining and deposits
+      for (let round = 0; round < 3; round++) {
+        const blocksThisRound = 5;
+        
+        // Mine blocks
+        for (let i = 0; i < blocksThisRound; i++) {
+          await ethers.provider.send("evm_mine", []);
+        }
+        
+        // Make deposit to trigger emission update
+        await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("100"));
+        
+        totalEmission += BigInt(blocksThisRound) * INITIAL_EMISSION_PER_BLOCK;
+      }
+      
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      
+      // Pool should have grown by at least the expected amount
+      const poolGrowth = finalPool - initialPool;
+      expect(poolGrowth).to.be.gte(ethers.parseEther("300") + totalEmission);
     });
   });
 });
