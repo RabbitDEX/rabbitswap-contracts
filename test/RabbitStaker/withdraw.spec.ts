@@ -443,18 +443,10 @@ describe("RabbitStaker - Withdraw Functionality", function () {
       const { rabbitStaker, sRabbitToken, user1 } = fixture;
       const smallAmount = ethers.parseUnits("1", 12); // 0.000001 sRABBIT
       const vestingDays = 30;
-      
-      const expectedRabbitOutput = await rabbitStaker.calculateRabbitOutput(smallAmount, vestingDays);
-      
-      if (expectedRabbitOutput > 0) {
-        await sRabbitToken.connect(user1).approve(await rabbitStaker.getAddress(), smallAmount);
-        await expect(rabbitStaker.connect(user1).withdraw(smallAmount, vestingDays))
-          .to.not.be.reverted;
-      } else {
-        await sRabbitToken.connect(user1).approve(await rabbitStaker.getAddress(), smallAmount);
-        await expect(rabbitStaker.connect(user1).withdraw(smallAmount, vestingDays))
-          .to.be.revertedWith("RABBIT amount too small");
-      }
+
+      await sRabbitToken.connect(user1).approve(await rabbitStaker.getAddress(), smallAmount);
+      await expect(rabbitStaker.connect(user1).withdraw(smallAmount, vestingDays))
+        .to.not.be.reverted;
     });
 
     it("should handle withdrawal exactly at vesting boundaries", async function () {
