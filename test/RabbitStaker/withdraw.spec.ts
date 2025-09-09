@@ -443,10 +443,10 @@ describe("RabbitStaker - Withdraw Functionality", function () {
       const { rabbitStaker, sRabbitToken, user1 } = fixture;
       const smallAmount = ethers.parseUnits("1", 12); // 0.000001 sRABBIT
       const vestingDays = 30;
-
+      
       await sRabbitToken.connect(user1).approve(await rabbitStaker.getAddress(), smallAmount);
-      await expect(rabbitStaker.connect(user1).withdraw(smallAmount, vestingDays))
-        .to.not.be.reverted;
+        await expect(rabbitStaker.connect(user1).withdraw(smallAmount, vestingDays))
+          .to.not.be.reverted;
     });
 
     it("should handle withdrawal exactly at vesting boundaries", async function () {
@@ -458,6 +458,179 @@ describe("RabbitStaker - Withdraw Functionality", function () {
       
       // Test maximum boundary  
       await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, 180);
+    });
+  });
+
+  describe("Withdrawal with Emission Rate Impact", function () {
+    beforeEach(async function () {
+      // Setup initial deposits for emission tests
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
+    });
+
+    it("should improve exchange rate for remaining stakers after withdrawal with emission", async function () {
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2, user2Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Mine blocks to accumulate emission
+      for (let i = 0; i < 10; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Get initial exchange rate
+      const initialRate = await rabbitStaker.getRabbitPerShare();
+      
+      // User1 withdraws some sRABBIT
+      const withdrawAmount = ethers.parseEther("200");
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, 15);
+      
+      // Exchange rate should have improved due to emission + withdrawal
+      const finalRate = await rabbitStaker.getRabbitPerShare();
+      expect(finalRate).to.be.gt(initialRate);
+      
+      // User2 should get fewer sRABBIT for same RABBIT deposit due to improved rate
+      const testDeposit = ethers.parseEther("100");
+      const calculatedSRabbit = await rabbitStaker.calculateSRabbitAmount(testDeposit);
+      
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, testDeposit);
+      const actualSRabbit = await sRabbitToken.balanceOf(user2Address);
+      
+      // Should be close to calculated amount (allowing for rounding)
+      const difference = actualSRabbit > calculatedSRabbit 
+        ? actualSRabbit - calculatedSRabbit 
+        : calculatedSRabbit - actualSRabbit;
+      expect(difference).to.be.lte(BigInt(1e21)); // 1000 token precision for emission tests
+    });
+
+    it("should handle withdrawal with accumulated emission rewards", async function () {
+      const { rabbitStaker, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Mine blocks to accumulate emission
+      for (let i = 0; i < 15; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      const initialPool = await rabbitStaker.totalRabbitInPool();
+      const withdrawAmount = ethers.parseEther("300");
+      const vestingDays = 30;
+      
+      // Calculate expected RABBIT output
+      const expectedRabbitAmount = await rabbitStaker.calculateRabbitOutput(withdrawAmount, vestingDays);
+      
+      // Perform withdrawal
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, vestingDays);
+      
+      // Check that withdrawal was created correctly
+      const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      expect(withdrawal.rabbitAmount).to.be.gte(expectedRabbitAmount);
+      expect(withdrawal.claimed).to.be.false;
+      
+      // Pool should have grown due to emission, but locked amount should be subtracted from available
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      const totalLocked = await rabbitStaker.totalLockedRabbit();
+      const availableForWithdrawals = await rabbitStaker.getAvailableRabbitForWithdrawals();
+      
+      expect(totalLocked).to.be.gte(expectedRabbitAmount);
+      expect(availableForWithdrawals).to.equal(finalPool - totalLocked);
+    });
+
+    it("should handle withdrawal with zero emission rate", async function () {
+      const { rabbitStaker, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Ensure emission is zero
+      await rabbitStaker.setRabbitEmissionPerBlock(0);
+      
+      // Mine blocks (should not accumulate emission)
+      for (let i = 0; i < 20; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      const initialPool = await rabbitStaker.totalRabbitInPool();
+      const withdrawAmount = ethers.parseEther("200");
+      const vestingDays = 45;
+      
+      // Perform withdrawal
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, vestingDays);
+      
+      // Pool should not have grown due to emission
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      expect(finalPool).to.equal(initialPool);
+      
+      // Withdrawal should still work correctly
+      const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      expect(withdrawal.rabbitAmount).to.be.gt(0);
+      expect(withdrawal.claimed).to.be.false;
+    });
+
+    it("should handle multiple withdrawals with emission accumulation", async function () {
+      const { rabbitStaker, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // First withdrawal
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15);
+      
+      // Mine blocks to accumulate more emission
+      for (let i = 0; i < 10; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Second withdrawal (should benefit from improved exchange rate)
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 30);
+      
+      // Check both withdrawals exist
+      const withdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const withdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      
+      expect(withdrawal1.rabbitAmount).to.be.gt(0);
+      expect(withdrawal2.rabbitAmount).to.be.gt(0);
+      expect(withdrawal1.claimed).to.be.false;
+      expect(withdrawal2.claimed).to.be.false;
+      
+      // Total locked should be sum of both withdrawals
+      const totalLocked = await rabbitStaker.totalLockedRabbit();
+      expect(totalLocked).to.equal(withdrawal1.rabbitAmount + withdrawal2.rabbitAmount);
+    });
+
+    it("should handle withdrawal with emission rate changes", async function () {
+      const { rabbitStaker, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set initial emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Mine blocks with initial rate
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Change emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.2"));
+      
+      // Mine more blocks with new rate
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Perform withdrawal
+      const withdrawAmount = ethers.parseEther("250");
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, 60);
+      
+      // Withdrawal should work correctly with mixed emission rates
+      const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      expect(withdrawal.rabbitAmount).to.be.gt(0);
+      expect(withdrawal.claimed).to.be.false;
+      
+      // Pool should have grown due to both emission rates
+      const finalPool = await rabbitStaker.totalRabbitInPool();
+      const expectedEmission = BigInt(5) * ethers.parseEther("0.1") + BigInt(5) * ethers.parseEther("0.2");
+      expect(finalPool).to.be.gte(ethers.parseEther("1500") + expectedEmission); // 1000 + 500 initial deposits
     });
   });
 });

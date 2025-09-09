@@ -600,4 +600,297 @@ describe("RabbitStaker - Claim Functionality", function () {
         .to.be.revertedWith("No claimable withdrawals");
     });
   });
+
+  describe("Claim with Emission Rate Impact", function () {
+    beforeEach(async function () {
+      // Setup initial deposits for emission tests
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
+    });
+
+    it("should handle claims with accumulated emission rewards", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Create withdrawal
+      const withdrawAmount = ethers.parseEther("200");
+      const vestingDays = 15;
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, vestingDays);
+      
+      // Mine blocks to accumulate emission
+      for (let i = 0; i < 10; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Fast forward time past vesting period
+      await ethers.provider.send("evm_increaseTime", [vestingDays * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+      
+      const initialRabbitBalance = await rabbitToken.balanceOf(user1Address);
+      const initialTotalLocked = await rabbitStaker.totalLockedRabbit();
+      
+      // Get withdrawal details
+      const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      
+      // Claim withdrawal
+      await expect(rabbitStaker.connect(user1).claim(0))
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 0, withdrawal.rabbitAmount);
+      
+      // Validate state changes
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + withdrawal.rabbitAmount);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(initialTotalLocked - withdrawal.rabbitAmount);
+      
+      // Check withdrawal is marked as claimed
+      const updatedWithdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      expect(updatedWithdrawal.claimed).to.be.true;
+    });
+
+    it("should handle claims with zero emission rate", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Ensure emission is zero
+      await rabbitStaker.setRabbitEmissionPerBlock(0);
+      
+      // Create withdrawal
+      const withdrawAmount = ethers.parseEther("150");
+      const vestingDays = 20;
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, vestingDays);
+      
+      // Mine blocks (should not accumulate emission)
+      for (let i = 0; i < 15; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Fast forward time past vesting period
+      await ethers.provider.send("evm_increaseTime", [vestingDays * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+      
+      const initialRabbitBalance = await rabbitToken.balanceOf(user1Address);
+      const initialTotalLocked = await rabbitStaker.totalLockedRabbit();
+      
+      // Get withdrawal details
+      const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      
+      // Claim withdrawal
+      await expect(rabbitStaker.connect(user1).claim(0))
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 0, withdrawal.rabbitAmount);
+      
+      // Validate state changes
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + withdrawal.rabbitAmount);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(initialTotalLocked - withdrawal.rabbitAmount);
+      
+      // Check withdrawal is marked as claimed
+      const updatedWithdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      expect(updatedWithdrawal.claimed).to.be.true;
+    });
+
+    it("should handle multiple claims with emission accumulation", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Create multiple withdrawals
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 20);
+      
+      // Mine blocks to accumulate emission
+      for (let i = 0; i < 12; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Fast forward time past first vesting period
+      await ethers.provider.send("evm_increaseTime", [15 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+      
+      const initialRabbitBalance = await rabbitToken.balanceOf(user1Address);
+      const initialTotalLocked = await rabbitStaker.totalLockedRabbit();
+      
+      // Get withdrawal details
+      const withdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const withdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      
+      // Claim first withdrawal
+      await expect(rabbitStaker.connect(user1).claim(0))
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 0, withdrawal1.rabbitAmount);
+      
+      // Validate state after first claim
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + withdrawal1.rabbitAmount);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(initialTotalLocked - withdrawal1.rabbitAmount);
+      
+      // Fast forward time past second vesting period
+      await ethers.provider.send("evm_increaseTime", [5 * 24 * 60 * 60 + 1]); // 5 more days
+      await ethers.provider.send("evm_mine", []);
+      
+      // Claim second withdrawal
+      await expect(rabbitStaker.connect(user1).claim(1))
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 1, withdrawal2.rabbitAmount);
+      
+      // Validate final state
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + withdrawal1.rabbitAmount + withdrawal2.rabbitAmount);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(0);
+      
+      // Check both withdrawals are marked as claimed
+      const updatedWithdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const updatedWithdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      expect(updatedWithdrawal1.claimed).to.be.true;
+      expect(updatedWithdrawal2.claimed).to.be.true;
+    });
+
+    it("should handle claimAll with emission rewards", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Create multiple withdrawals
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 20);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 25);
+      
+      // Mine blocks to accumulate emission
+      for (let i = 0; i < 15; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Fast forward time past all vesting periods
+      await ethers.provider.send("evm_increaseTime", [25 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+      
+      const initialRabbitBalance = await rabbitToken.balanceOf(user1Address);
+      const initialTotalLocked = await rabbitStaker.totalLockedRabbit();
+      
+      // Get withdrawal details
+      const withdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const withdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      const withdrawal3 = await rabbitStaker.getUserWithdrawal(user1Address, 2);
+      
+      const expectedTotalClaimed = withdrawal1.rabbitAmount + withdrawal2.rabbitAmount + withdrawal3.rabbitAmount;
+      
+      // Claim all withdrawals
+      await expect(rabbitStaker.connect(user1).claimAll())
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 0, withdrawal1.rabbitAmount)
+        .and.to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 1, withdrawal2.rabbitAmount)
+        .and.to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 2, withdrawal3.rabbitAmount);
+      
+      // Validate final state
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + expectedTotalClaimed);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(0);
+      
+      // Check all withdrawals are marked as claimed
+      const updatedWithdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const updatedWithdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      const updatedWithdrawal3 = await rabbitStaker.getUserWithdrawal(user1Address, 2);
+      expect(updatedWithdrawal1.claimed).to.be.true;
+      expect(updatedWithdrawal2.claimed).to.be.true;
+      expect(updatedWithdrawal3.claimed).to.be.true;
+    });
+
+    it("should handle claims with emission rate changes", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set initial emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Create withdrawal
+      const withdrawAmount = ethers.parseEther("300");
+      const vestingDays = 30;
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, withdrawAmount, vestingDays);
+      
+      // Mine blocks with initial rate
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Change emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.2"));
+      
+      // Mine more blocks with new rate
+      for (let i = 0; i < 5; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Fast forward time past vesting period
+      await ethers.provider.send("evm_increaseTime", [vestingDays * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+      
+      const initialRabbitBalance = await rabbitToken.balanceOf(user1Address);
+      const initialTotalLocked = await rabbitStaker.totalLockedRabbit();
+      
+      // Get withdrawal details
+      const withdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      
+      // Claim withdrawal
+      await expect(rabbitStaker.connect(user1).claim(0))
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 0, withdrawal.rabbitAmount);
+      
+      // Validate state changes
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + withdrawal.rabbitAmount);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(initialTotalLocked - withdrawal.rabbitAmount);
+      
+      // Check withdrawal is marked as claimed
+      const updatedWithdrawal = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      expect(updatedWithdrawal.claimed).to.be.true;
+    });
+
+    it("should handle claimMultiple with emission rewards", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user1Address } = fixture;
+      
+      // Set emission rate
+      await rabbitStaker.setRabbitEmissionPerBlock(ethers.parseEther("0.1"));
+      
+      // Create multiple withdrawals
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("100"), 15);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("150"), 20);
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("200"), 25);
+      
+      // Mine blocks to accumulate emission
+      for (let i = 0; i < 15; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Fast forward time past all vesting periods
+      await ethers.provider.send("evm_increaseTime", [25 * 24 * 60 * 60 + 1]);
+      await ethers.provider.send("evm_mine", []);
+      
+      const initialRabbitBalance = await rabbitToken.balanceOf(user1Address);
+      const initialTotalLocked = await rabbitStaker.totalLockedRabbit();
+      
+      // Get withdrawal details
+      const withdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const withdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      const withdrawal3 = await rabbitStaker.getUserWithdrawal(user1Address, 2);
+      
+      // Claim specific withdrawals (0 and 2)
+      await expect(rabbitStaker.connect(user1).claimMultiple([0, 2]))
+        .to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 0, withdrawal1.rabbitAmount)
+        .and.to.emit(rabbitStaker, "WithdrawalClaimed")
+        .withArgs(user1Address, 2, withdrawal3.rabbitAmount);
+      
+      // Validate state after partial claims
+      const expectedClaimed = withdrawal1.rabbitAmount + withdrawal3.rabbitAmount;
+      expect(await rabbitToken.balanceOf(user1Address)).to.equal(initialRabbitBalance + expectedClaimed);
+      expect(await rabbitStaker.totalLockedRabbit()).to.equal(initialTotalLocked - expectedClaimed);
+      
+      // Check specific withdrawals are marked as claimed
+      const updatedWithdrawal1 = await rabbitStaker.getUserWithdrawal(user1Address, 0);
+      const updatedWithdrawal2 = await rabbitStaker.getUserWithdrawal(user1Address, 1);
+      const updatedWithdrawal3 = await rabbitStaker.getUserWithdrawal(user1Address, 2);
+      expect(updatedWithdrawal1.claimed).to.be.true;
+      expect(updatedWithdrawal2.claimed).to.be.false; // Not claimed yet
+      expect(updatedWithdrawal3.claimed).to.be.true;
+    });
+  });
 });
