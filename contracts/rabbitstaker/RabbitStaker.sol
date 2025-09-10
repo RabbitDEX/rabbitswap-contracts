@@ -57,7 +57,7 @@ contract RabbitStaker is
     
     /// @dev Updates reward calculations before function execution
     modifier updateRewards() {
-        _updateRabbitPerShare();
+        _updateRewards();
         _;
     }
 
@@ -145,7 +145,7 @@ contract RabbitStaker is
         _sRabbitToken.mint(msg.sender, sRabbitAmount);
         
         // Recalculate exchange rate following deposit
-        _updateRabbitPerShareAfterDeposit();
+        _updateRabbitPerShare();
         
         emit Deposited(msg.sender, rabbitAmount, sRabbitAmount, _rabbitPerShare);
     }
@@ -160,7 +160,8 @@ contract RabbitStaker is
         // Calculate RABBIT output and validate pool liquidity
         uint256 rabbitAmount = calculateRabbitOutput(sRabbitAmount, vestingDays);
         require(rabbitAmount > 0, "RABBIT amount too small");
-        require(_totalRabbitInPool >= _totalLockedRabbit + rabbitAmount, "Insufficient RABBIT in pool");
+        uint256 actualRabbitBalance = _rabbitToken.balanceOf(address(this));
+        require(actualRabbitBalance >= _totalLockedRabbit + rabbitAmount, "Insufficient RABBIT in pool");
         
         // Create withdrawal request with vesting schedule
         uint256 withdrawalId = _userWithdrawalCount[msg.sender];
@@ -179,7 +180,7 @@ contract RabbitStaker is
         _sRabbitToken.burn(sRabbitAmount);
         
         // Recalculate exchange rate following sRABBIT burn
-        _updateRabbitPerShareAfterDeposit();
+        _updateRabbitPerShare();
         
         emit WithdrawalRequested(
             msg.sender,
@@ -255,7 +256,7 @@ contract RabbitStaker is
         // Transfer tokens and update pool state
         _rabbitToken.safeTransferFrom(msg.sender, address(this), amount);
         _totalRabbitInPool += amount;
-        _updateRabbitPerShareAfterDeposit();
+        _updateRabbitPerShare();
         
         emit RewardContributed(msg.sender, amount, _rabbitPerShare);
     }
@@ -266,7 +267,7 @@ contract RabbitStaker is
     
     /// @notice Set RABBIT emission rate per block (base reward distribution)
     function setRabbitEmissionPerBlock(uint256 newEmission) external onlyOwner {
-        _updateRabbitPerShare();
+        _updateRewards();
         
         uint256 oldEmission = _rabbitEmissionPerBlock;
         _rabbitEmissionPerBlock = newEmission;
@@ -391,20 +392,12 @@ contract RabbitStaker is
         return claimableIds;
     }
 
-    /// @dev Check if withdrawal meets claimability criteria
-    function _isWithdrawalClaimable(address user, uint256 withdrawalId) internal view returns (bool) {
-        WithdrawalRequest storage withdrawal = _userWithdrawals[user][withdrawalId];
-        return !withdrawal.claimed && 
-               block.timestamp >= withdrawal.unlockTime && 
-               withdrawal.rabbitAmount > 0;
-    }
-
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     // INTERNAL FUNCTIONS - Core Logic
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     
     /// @dev Apply base rewards (emission) to the staking pool
-    function _updateRabbitPerShare() internal {
+    function _updateRewards() internal {
         if (block.number <= _lastRewardBlock) {
             return;
         }
@@ -415,27 +408,28 @@ contract RabbitStaker is
         // Distribute base rewards to pool if blocks have elapsed
         if (baseReward > 0) {
             _totalRabbitInPool += baseReward;
-            _updateRabbitPerShareAfterDeposit();
+            _updateRabbitPerShare();
         }
         
         _lastRewardBlock = block.number;
     }
 
-    /// @dev Recalculate exchange rate: rabbitPerShare = totalRabbitInPool / sRabbitSupply
-    function _updateRabbitPerShareAfterDeposit() internal {
+    /// @dev Recalculate exchange rate: rabbitPerShare = availableRabbit / sRabbitSupply
+    function _updateRabbitPerShare() internal {
         uint256 oldRabbitPerShare = _rabbitPerShare;
+        uint256 availableRabbit = _totalRabbitInPool - _totalLockedRabbit;
         uint256 sRabbitSupply = _sRabbitToken.totalSupply();
         
         if (sRabbitSupply > 0) {
-            _rabbitPerShare = (_totalRabbitInPool * PRECISION) / sRabbitSupply;
+            _rabbitPerShare = (availableRabbit * PRECISION) / sRabbitSupply;
         } else {
-            _rabbitPerShare = PRECISION; // Reset to 1:1 ratio when no sRABBIT exists
+            _rabbitPerShare = PRECISION;
         }
         
         emit RabbitPerShareUpdated(
             oldRabbitPerShare,
             _rabbitPerShare,
-            _totalRabbitInPool,
+            availableRabbit,
             sRabbitSupply
         );
     }
@@ -444,13 +438,21 @@ contract RabbitStaker is
     function _getRabbitPerShare() internal view returns (uint256) {
         uint256 blocksPassed = block.number - _lastRewardBlock;
         uint256 baseReward = blocksPassed * _rabbitEmissionPerBlock;
-        uint256 totalRabbitWithRewards = _totalRabbitInPool + baseReward;
+        uint256 availableRabbitWithRewards = (_totalRabbitInPool - _totalLockedRabbit) + baseReward;
         
         uint256 sRabbitSupply = _sRabbitToken.totalSupply();
         if (sRabbitSupply > 0) {
-            return (totalRabbitWithRewards * PRECISION) / sRabbitSupply;
+            return (availableRabbitWithRewards * PRECISION) / sRabbitSupply;
         } else {
             return PRECISION; // 1:1 ratio when no sRABBIT exists
         }
+    }
+
+    /// @dev Check if withdrawal meets claimability criteria
+    function _isWithdrawalClaimable(address user, uint256 withdrawalId) internal view returns (bool) {
+        WithdrawalRequest storage withdrawal = _userWithdrawals[user][withdrawalId];
+        return !withdrawal.claimed && 
+               block.timestamp >= withdrawal.unlockTime && 
+               withdrawal.rabbitAmount > 0;
     }
 }

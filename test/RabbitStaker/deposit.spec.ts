@@ -345,6 +345,44 @@ describe("RabbitStaker - Deposit Functionality", function () {
       // Validate total supply matches sum of individual mints
       expect(await sRabbitToken.totalSupply()).to.equal(totalSRabbitMinted);
     });
+
+    it("should use correct exchange rate for deposits after withdrawals", async function () {
+      const { rabbitStaker, rabbitToken, sRabbitToken, user1, user2, user1Address, user2Address } = fixture;
+      
+      // User1 deposits 1000 RABBIT
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
+      
+      // User2 deposits 500 RABBIT
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("500"));
+      
+      // User1 withdraws 500 sRABBIT with 50% conversion (locks 250 RABBIT)
+      const withdrawAmount = ethers.parseEther("500");
+      const vestingDays = 15; // 50% conversion rate
+      
+      await sRabbitToken.connect(user1).approve(await rabbitStaker.getAddress(), withdrawAmount);
+      await rabbitStaker.connect(user1).withdraw(withdrawAmount, vestingDays);
+      
+      // After withdrawal: available RABBIT = 1500 - 250 = 1250, sRABBIT supply = 1000
+      // Exchange rate should be 1.25
+      const exchangeRate = await rabbitStaker.getRabbitPerShare();
+      expect(exchangeRate).to.equal(ethers.parseEther("1.25"));
+      
+      // User2 makes a new deposit of 100 RABBIT
+      // Should get: 100 / 1.25 = 80 sRABBIT
+      const newDeposit = ethers.parseEther("100");
+      const expectedSRabbit = ethers.parseEther("80"); // 100 / 1.25
+      
+      await rabbitToken.connect(user2).approve(await rabbitStaker.getAddress(), newDeposit);
+      await rabbitStaker.connect(user2).deposit(newDeposit);
+      
+      // Verify user2 got the correct amount of sRABBIT
+      const user2SRabbitBalance = await sRabbitToken.balanceOf(user2Address);
+      expect(user2SRabbitBalance).to.equal(ethers.parseEther("500") + expectedSRabbit);
+      
+      // Verify the exchange rate calculation is correct
+      const calculatedSRabbit = await rabbitStaker.calculateSRabbitAmount(newDeposit);
+      expect(calculatedSRabbit).to.equal(expectedSRabbit);
+    });
   });
 
   describe("Emission Per Block Mechanism", function () {

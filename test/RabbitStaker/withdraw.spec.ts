@@ -240,6 +240,34 @@ describe("RabbitStaker - Withdraw Functionality", function () {
       // Exchange rate should be recalculated after sRABBIT burn
       expect(finalRate).to.not.equal(initialRate);
     });
+
+    it("should use available RABBIT (not total) for exchange rate calculation", async function () {
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1 } = fixture;
+      
+      // Setup: 1000 RABBIT deposited, 1000 sRABBIT minted
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
+      
+      // Withdraw 500 sRABBIT (locks some RABBIT)
+      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("500"), 15);
+      
+      // Get actual values
+      const totalRabbit = await rabbitStaker.totalRabbitInPool();
+      const lockedRabbit = await rabbitStaker.totalLockedRabbit();
+      const availableRabbit = totalRabbit - lockedRabbit;
+      const sRabbitSupply = await sRabbitToken.totalSupply();
+      
+      // Calculate expected rate: available RABBIT / sRABBIT supply
+      const expectedRate = (availableRabbit * ethers.parseEther("1")) / sRabbitSupply;
+      const actualRate = await rabbitStaker.getRabbitPerShare();
+      
+      // The rate should use available RABBIT, not total RABBIT
+      expect(actualRate).to.equal(ethers.parseEther("1.125"));
+      expect(totalRabbit).to.equal(ethers.parseEther("2500"));
+      expect(lockedRabbit).to.equal(ethers.parseEther("250"));
+      expect(availableRabbit).to.equal(ethers.parseEther("2250"));
+      expect(sRabbitSupply).to.equal(ethers.parseEther("2000"));
+      expect(actualRate).to.equal(expectedRate);
+    });
   });
 
   describe("Error Cases", function () {
@@ -281,19 +309,26 @@ describe("RabbitStaker - Withdraw Functionality", function () {
         .to.be.revertedWith("Insufficient sRABBIT balance");
     });
 
-    it("should revert when insufficient RABBIT in pool", async function () {
-      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2 } = fixture;
+    it("should revert when insufficient RABBIT in pool due to emission without backing", async function () {
+      const { rabbitStaker, sRabbitToken, rabbitToken, user1, user2, owner } = fixture;
       
-      // Give user2 large sRABBIT balance
-      await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("5000"));
+      // User1 deposits 1000 RABBIT initially
+      await approveAndDeposit(rabbitToken, rabbitStaker, user1, ethers.parseEther("1000"));
       
-      // Lock most RABBIT in the pool, leaving very little available
-      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user1, ethers.parseEther("1000"), 180);
-      await approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user2, ethers.parseEther("4000"), 180); 
-      // user2 still has 1000 sRABBIT remaining
+      // User2 deposits 100 RABBIT BEFORE emission starts (gets sRABBIT at 1:1 rate)
+      await approveAndDeposit(rabbitToken, rabbitStaker, user2, ethers.parseEther("100"));
       
-      // Try to withdraw a smaller amount that user2 has but would exceed available pool
-      await expect(approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user2, ethers.parseEther("500"), 180))
+      // Set very high emission rate (but no actual RABBIT is provided to back it)
+      await rabbitStaker.connect(owner).setRabbitEmissionPerBlock(ethers.parseEther("10000"));
+      
+      // Advance many blocks to accumulate emission rewards
+      // This increases _totalRabbitInPool but no actual RABBIT tokens are added
+      for (let i = 0; i < 100; i++) {
+        await ethers.provider.send("evm_mine", []);
+      }
+      
+      // Now user2 tries to withdraw - the exchange rate is inflated by emission
+      await expect(approveSRabbitAndWithdraw(sRabbitToken, rabbitStaker, user2, ethers.parseEther("100"), 180))
         .to.be.revertedWith("Insufficient RABBIT in pool");
     });
 
