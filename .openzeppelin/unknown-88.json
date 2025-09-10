@@ -578,6 +578,263 @@
           ]
         }
       }
+    },
+    "6b0c6cc4a731320b1b9cbb2be044e769d049d959856adb7cf9958f425ed94db7": {
+      "address": "0x1B2ce2C2646Ce868bf8cab566b7033b4D503b873",
+      "txHash": "0xd16928e3c3f902bf99dada17c3b21af715d7c4e54101ec4a906cba590b82da03",
+      "layout": {
+        "solcVersion": "0.8.29",
+        "storage": [
+          {
+            "label": "_rabbitToken",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(IERC20)805",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:50"
+          },
+          {
+            "label": "_sRabbitToken",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(ISRabbitToken)2645",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:51"
+          },
+          {
+            "label": "_rabbitPerShare",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:51"
+          },
+          {
+            "label": "_totalRabbitInPool",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:52"
+          },
+          {
+            "label": "_rabbitEmissionPerBlock",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:54"
+          },
+          {
+            "label": "_lastRewardBlock",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:56"
+          },
+          {
+            "label": "_userWithdrawals",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)2763_storage))",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:56"
+          },
+          {
+            "label": "_userWithdrawalCount",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:59"
+          },
+          {
+            "label": "_totalLockedRabbit",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:64"
+          },
+          {
+            "label": "_minVestingDays",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:65"
+          },
+          {
+            "label": "_maxVestingDays",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:66"
+          },
+          {
+            "label": "_minConversionRate",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:68"
+          },
+          {
+            "label": "_maxConversionRate",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:72"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)86_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)14_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(ReentrancyGuardStorage)190_storage": {
+            "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
+            "members": [
+              {
+                "label": "_status",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_contract(IERC20)805": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISRabbitToken)2645": {
+            "label": "contract ISRabbitToken",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)2763_storage))": {
+            "label": "mapping(address => mapping(uint256 => struct IRabbitStaker.WithdrawalRequest))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(WithdrawalRequest)2763_storage)": {
+            "label": "mapping(uint256 => struct IRabbitStaker.WithdrawalRequest)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(WithdrawalRequest)2763_storage": {
+            "label": "struct IRabbitStaker.WithdrawalRequest",
+            "members": [
+              {
+                "label": "rabbitAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "unlockTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "claimed",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
     }
   }
 }
