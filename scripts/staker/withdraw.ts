@@ -92,13 +92,15 @@ async function main() {
   if (allowance < BigInt(withdrawAmount)) {
     console.log("Approving sRABBIT tokens...");
     const approveTx = await sRabbitToken.connect(deployer).approve(rabbitStakerAddress, withdrawAmount);
-    await approveTx.wait();
+    await approveTx.wait(10);
     console.log("✓ Approval confirmed");
   }
 
   // Perform withdrawal
   console.log("\nExecuting withdrawal...");
-  const withdrawTx = await rabbitStaker.connect(deployer).withdraw(withdrawAmount, vestingDaysNum);
+  const withdrawTx = await rabbitStaker.connect(deployer).withdraw(withdrawAmount, vestingDaysNum, {
+    gasLimit: 500000
+  });
   const receipt = await withdrawTx.wait();
 
   // Get new withdrawal count
