@@ -218,6 +218,8 @@ contract RabbitStaker is
     }
 
     /// @notice Claim specific withdrawals by ID array
+    /// @dev Limited to 100 withdrawals per transaction to prevent gas limit issues
+    /// @param withdrawalIds Array of withdrawal IDs to claim (max 100 items)
     function claimMultiple(uint256[] calldata withdrawalIds) external nonReentrant {
         require(withdrawalIds.length > 0, "Empty withdrawal IDs");
         require(withdrawalIds.length <= 100, "Too many withdrawals per transaction");
@@ -347,7 +349,7 @@ contract RabbitStaker is
 
     /// @notice Get total claimable RABBIT amount across all ready withdrawals
     function getClaimableAmount(address user) external view returns (uint256) {
-        uint256[] memory claimableIds = this.getClaimableWithdrawalIds(user);
+        uint256[] memory claimableIds = getClaimableWithdrawalIds(user);
         uint256 totalClaimable = 0;
         
         for (uint256 i = 0; i < claimableIds.length; i++) {
@@ -370,7 +372,7 @@ contract RabbitStaker is
     }
 
     /// @notice Get IDs of claimable withdrawals for user (utility for claimMultiple)
-    function getClaimableWithdrawalIds(address user) external view returns (uint256[] memory) {
+    function getClaimableWithdrawalIds(address user) public view returns (uint256[] memory) {
         uint256 withdrawalCount = _userWithdrawalCount[user];
         uint256[] memory temp = new uint256[](withdrawalCount);
         uint256 claimableCount = 0;
