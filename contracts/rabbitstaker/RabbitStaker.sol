@@ -7,12 +7,14 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+
 import "./interfaces/IRabbitStaker.sol";
+import "../vrc725/VRC25Upgradeable.sol";
 
 contract RabbitStaker is
     IRabbitStaker,
     Initializable,
-    OwnableUpgradeable,
+    VRC25Upgradeable,
     ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
@@ -89,6 +91,8 @@ contract RabbitStaker is
         
         __Context_init();
         __Ownable_init(msg.sender);
+        __Ownable2Step_init();
+        __VRC25_init('RabbitStaker', 'RABSTK', 18);
         __ReentrancyGuard_init();
     }
 
@@ -457,4 +461,11 @@ contract RabbitStaker is
                block.timestamp >= withdrawal.unlockTime && 
                withdrawal.rabbitAmount > 0;
     }
+
+    /**
+     * @notice Calculate fee required for action related to this token
+	 */
+	function _estimateFee(uint256 /* value */) internal view override returns (uint256) {
+		return minFee();
+	}
 }
