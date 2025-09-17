@@ -1,22 +1,37 @@
-import { ethers, run, upgrades } from "hardhat";
+import { ethers, run } from "hardhat";
 import { readMetadata } from "../metadata";
 
 async function verifyContracts() {
   // Get addresses from metadata
-  const sRabbitTokenAddress = readMetadata("SRabbitToken");
-  const proxyAddress = readMetadata("RabbitStaker_Proxy");
-  const implementationAddress = readMetadata("RabbitStaker_Implementation");
-  const adminAddress = readMetadata("RabbitStaker_ProxyAdmin");
+  const mockRabbitTokenAddress = readMetadata("MockRabbitToken");
+  const sRabbitTokenAddress = readMetadata("MockSRabbitToken");
+  const proxyAddress = readMetadata("MockRabbitStaker_Proxy");
+  const implementationAddress = readMetadata("MockRabbitStaker_Implementation");
+  const adminAddress = readMetadata("MockRabbitStaker_ProxyAdmin");
   
   const [owner] = await ethers.getSigners();
   const ownerAddress = await owner.getAddress();
 
   console.log("Verification addresses:");
+  console.log("MockRabbitToken:", mockRabbitTokenAddress);
   console.log("SRabbitToken:", sRabbitTokenAddress);
   console.log("Implementation:", implementationAddress);
   console.log("Proxy:", proxyAddress);
   console.log("ProxyAdmin:", adminAddress);
   console.log("Owner:", ownerAddress);
+
+  // Verify MockERC20
+  console.log("\nVerifying MockERC20 contract on block explorer...");
+  try {
+    await run("verify:verify", {
+      address: mockRabbitTokenAddress,
+      constructorArguments: ["Mock Rabbit Token", "mRB"],
+      contract: "contracts/mocks/MockERC20.sol:MockERC20",
+    });
+    console.log("✓ MockERC20 verified successfully");
+  } catch (error) {
+    console.log("Error verifying MockERC20 contract:", error);
+  }
 
   // Verify SRabbitToken
   console.log("\nVerifying SRabbitToken contract on block explorer...");
@@ -70,6 +85,7 @@ async function verifyContracts() {
   }
 
   console.log("\nVerification complete:");
+  console.log("MockRabbitToken:", mockRabbitTokenAddress);
   console.log("SRabbitToken:", sRabbitTokenAddress);
   console.log("Implementation:", implementationAddress);
   console.log("Proxy:", proxyAddress);
