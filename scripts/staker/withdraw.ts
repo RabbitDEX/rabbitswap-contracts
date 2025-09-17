@@ -31,9 +31,9 @@ async function main() {
   }
 
   const vestingDaysNum = parseInt(vestingDays);
-  if (vestingDaysNum < 15 || vestingDaysNum > 180) {
-    throw new Error("VESTING_DAYS must be between 15 and 180");
-  }
+  // if (vestingDaysNum < 15 || vestingDaysNum > 180) {
+  //   throw new Error("VESTING_DAYS must be between 15 and 180");
+  // }
 
   console.log("Withdrawing sRABBIT tokens...");
   console.log("User address:", userAddress);
