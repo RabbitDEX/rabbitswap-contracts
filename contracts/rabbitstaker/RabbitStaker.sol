@@ -317,10 +317,20 @@ contract RabbitStaker is
         _sRabbitToken = sRabbitToken;
     }
 
+    /// @notice Emergency withdraw RABBIT tokens from the contract
+    /// @param token The token to withdraw
+    /// @dev Only owner can call this function
     function emergencyWithdraw(IERC20 token) external onlyOwner {
         if (address(token) == address(_rabbitToken)) {
-            uint256 withdrawableRabbit = _rabbitToken.balanceOf(address(this)) - _totalRabbitInPool - _totalLockedRabbit;
-            _rabbitToken.safeTransfer(msg.sender, withdrawableRabbit);
+            uint256 contractBalance = _rabbitToken.balanceOf(address(this));
+            uint256 requiredBalance = _totalRabbitInPool + _totalLockedRabbit;
+            
+            require(contractBalance >= requiredBalance, "Insufficient RABBIT balance for emergency withdraw");
+            
+            if (contractBalance > requiredBalance) {
+                uint256 withdrawableRabbit = contractBalance - requiredBalance;
+                _rabbitToken.safeTransfer(msg.sender, withdrawableRabbit);
+            }
         } else {
             token.safeTransfer(msg.sender, token.balanceOf(address(this)));
         }
