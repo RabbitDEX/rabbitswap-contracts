@@ -27,32 +27,14 @@ export const UPGRADE_RABBIT_STAKER = async () => {
   console.log("Starting RabbitStaker upgrade process...");
 
   // Read existing contract addresses from metadata
-  const proxyAddress = addressFor("RabbitStaker_Proxy");
-  const currentImplementationAddress = addressFor("RabbitStaker_Implementation");
-  const proxyAdminAddress = addressFor("RabbitStaker_ProxyAdmin");
+  const proxyAddress = addressFor("MockRabbitStaker_Proxy");
+  const currentImplementationAddress = addressFor("MockRabbitStaker_Implementation");
+  const proxyAdminAddress = addressFor("MockRabbitStaker_ProxyAdmin");
 
   console.log("Current contract addresses:");
   console.log("Proxy:", proxyAddress);
   console.log("Current Implementation:", currentImplementationAddress);
   console.log("ProxyAdmin:", proxyAdminAddress);
-
-  // Validate that the proxy exists and is upgradeable
-  try {
-    const currentImplementation = await upgrades.erc1967.getImplementationAddress(proxyAddress);
-    const currentAdmin = await upgrades.erc1967.getAdminAddress(proxyAddress);
-    
-    if (currentImplementation.toLowerCase() !== currentImplementationAddress.toLowerCase()) {
-      throw new Error("Implementation address mismatch in metadata");
-    }
-    
-    if (currentAdmin.toLowerCase() !== proxyAdminAddress.toLowerCase()) {
-      throw new Error("ProxyAdmin address mismatch in metadata");
-    }
-    
-    console.log("✓ Contract validation passed");
-  } catch (error) {
-    throw new Error(`Contract validation failed: ${error}`);
-  }
 
   // Deploy new implementation
   console.log("\nDeploying new RabbitStaker implementation...");
