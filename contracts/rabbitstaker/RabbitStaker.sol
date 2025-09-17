@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 import "./interfaces/IRabbitStaker.sol";
-import "../vrc725/VRC25Upgradeable.sol";
+import "../vrc25/VRC25Upgradeable.sol";
 
 contract RabbitStaker is
     IRabbitStaker,
@@ -310,6 +310,20 @@ contract RabbitStaker is
             oldMinConversionRate, minConversionRate,
             oldMaxConversionRate, maxConversionRate
         );
+    }
+
+    /// @notice Set sRABBIT token address
+    function setSRabbitToken(ISRabbitToken sRabbitToken) external onlyOwner updateRewards {
+        _sRabbitToken = sRabbitToken;
+    }
+
+    function emergencyWithdraw(IERC20 token) external onlyOwner {
+        if (address(token) == address(_rabbitToken)) {
+            uint256 withdrawableRabbit = _rabbitToken.balanceOf(address(this)) - _totalRabbitInPool - _totalLockedRabbit;
+            _rabbitToken.safeTransfer(msg.sender, withdrawableRabbit);
+        } else {
+            token.safeTransfer(msg.sender, token.balanceOf(address(this)));
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════════════════════════

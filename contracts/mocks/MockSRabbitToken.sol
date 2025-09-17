@@ -1,17 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.29;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "../vrc25/VRC25.sol";
 import "../rabbitstaker/interfaces/IRabbitStaker.sol";
 
-contract MockSRabbitToken is ERC20, ISRabbitToken {
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
+contract MockSRabbitToken is VRC25, ISRabbitToken {
+    constructor(string memory name, string memory symbol) VRC25(name, symbol, 18) {}
 
-    function mint(address to, uint256 amount) external override {
+    function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
 
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
+    function burn(uint256 amount) external override(VRC25, ISRabbitToken) returns (bool) {
+		uint256 fee = estimateFee(0);
+		_burn(msg.sender, amount);
+		_chargeFeeFrom(msg.sender, address(this), fee);
+		return true;
+	}
+
+    function _estimateFee(uint256 /* value */) internal view override(VRC25) returns (uint256) {
+        return minFee();
     }
 }

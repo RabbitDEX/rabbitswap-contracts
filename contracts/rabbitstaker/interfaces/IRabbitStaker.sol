@@ -2,15 +2,16 @@
 pragma solidity =0.8.29;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../../vrc25/interfaces/IVRC25.sol";
 
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 // INTERFACES
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 /// @title ISRabbitToken - Interface for sRABBIT token (VRC-25 with mint/burn)
-interface ISRabbitToken is IERC20 {
+interface ISRabbitToken is IVRC25 {
     function mint(address to, uint256 amount) external;
-    function burn(uint256 amount) external;
+    function burn(uint256 amount) external returns (bool);
 }
 
 /// @title IRabbitStaker - Interface for RABBIT staking with vesting withdrawals
