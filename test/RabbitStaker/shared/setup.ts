@@ -1,11 +1,11 @@
 import { ethers } from "hardhat";
 import { ContractTransactionResponse, Signer } from "ethers";
-import { RabbitStaker, MockERC20, MockSRabbitToken } from "../../../typechain";
+import { RabbitStaker, MockERC20, SRabbitToken } from "../../../typechain";
 
 export interface TestFixture {
   rabbitStaker: RabbitStaker;
   rabbitToken: MockERC20;
-  sRabbitToken: MockSRabbitToken;
+  sRabbitToken: SRabbitToken;
   owner: Signer;
   user1: Signer;
   user2: Signer;
@@ -28,8 +28,8 @@ export async function deployRabbitStakerFixture(): Promise<TestFixture> {
   const MockERC20Factory = await ethers.getContractFactory("MockERC20");
   const rabbitToken = await MockERC20Factory.deploy("Rabbit Token", "RABBIT");
   
-  const MockSRabbitTokenFactory = await ethers.getContractFactory("MockSRabbitToken");
-  const sRabbitToken = await MockSRabbitTokenFactory.deploy("Staked Rabbit Token", "sRABBIT");
+  const SRabbitTokenFactory = await ethers.getContractFactory("SRabbitToken");
+  const sRabbitToken = await SRabbitTokenFactory.deploy();
 
   // Deploy RabbitStaker
   const RabbitStakerFactory = await ethers.getContractFactory("RabbitStaker");
@@ -41,6 +41,8 @@ export async function deployRabbitStakerFixture(): Promise<TestFixture> {
     await sRabbitToken.getAddress(),
     0 // Initialize with zero emission
   );
+
+  await sRabbitToken.connect(owner).setMinter(rabbitStaker, true);
 
   // Mint initial tokens to users for testing
   await rabbitToken.mint(user1Address, INITIAL_SUPPLY);
@@ -78,7 +80,7 @@ export async function approveAndDeposit(
 }
 
 export async function approveSRabbitAndWithdraw(
-  sRabbitToken: MockSRabbitToken,
+  sRabbitToken: SRabbitToken,
   rabbitStaker: RabbitStaker,
   user: Signer,
   amount: bigint,
