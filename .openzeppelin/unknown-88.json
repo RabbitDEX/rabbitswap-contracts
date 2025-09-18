@@ -907,7 +907,7 @@
             "label": "_rabbitToken",
             "offset": 0,
             "slot": "7",
-            "type": "t_contract(IERC20)942",
+            "type": "t_contract(IERC20)2694",
             "contract": "RabbitStaker",
             "src": "contracts/rabbitstaker/RabbitStaker.sol:52"
           },
@@ -915,7 +915,7 @@
             "label": "_sRabbitToken",
             "offset": 0,
             "slot": "8",
-            "type": "t_contract(ISRabbitToken)3110",
+            "type": "t_contract(ISRabbitToken)12256",
             "contract": "RabbitStaker",
             "src": "contracts/rabbitstaker/RabbitStaker.sol:53"
           },
@@ -955,7 +955,354 @@
             "label": "_userWithdrawals",
             "offset": 0,
             "slot": "13",
-            "type": "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)3228_storage))",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)12374_storage))",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:58"
+          },
+          {
+            "label": "_userWithdrawalCount",
+            "offset": 0,
+            "slot": "14",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:61"
+          },
+          {
+            "label": "_totalLockedRabbit",
+            "offset": 0,
+            "slot": "15",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:66"
+          },
+          {
+            "label": "_minVestingDays",
+            "offset": 0,
+            "slot": "16",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:67"
+          },
+          {
+            "label": "_maxVestingDays",
+            "offset": 0,
+            "slot": "17",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:68"
+          },
+          {
+            "label": "_minConversionRate",
+            "offset": 0,
+            "slot": "18",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:70"
+          },
+          {
+            "label": "_maxConversionRate",
+            "offset": 0,
+            "slot": "19",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:74"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_struct(InitializableStorage)146_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Ownable2StepStorage)14_storage": {
+            "label": "struct Ownable2StepUpgradeable.Ownable2StepStorage",
+            "members": [
+              {
+                "label": "_pendingOwner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(OwnableStorage)74_storage": {
+            "label": "struct OwnableUpgradeable.OwnableStorage",
+            "members": [
+              {
+                "label": "_owner",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(ReentrancyGuardStorage)250_storage": {
+            "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
+            "members": [
+              {
+                "label": "_status",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_contract(IERC20)2694": {
+            "label": "contract IERC20",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISRabbitToken)12256": {
+            "label": "contract ISRabbitToken",
+            "numberOfBytes": "20"
+          },
+          "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+            "label": "mapping(address => mapping(address => uint256))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)12374_storage))": {
+            "label": "mapping(address => mapping(uint256 => struct IRabbitStaker.WithdrawalRequest))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(WithdrawalRequest)12374_storage)": {
+            "label": "mapping(uint256 => struct IRabbitStaker.WithdrawalRequest)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(WithdrawalRequest)12374_storage": {
+            "label": "struct IRabbitStaker.WithdrawalRequest",
+            "members": [
+              {
+                "label": "rabbitAmount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "unlockTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "claimed",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "2"
+              }
+            ],
+            "numberOfBytes": "96"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable2Step": [
+            {
+              "contract": "Ownable2StepUpgradeable",
+              "label": "_pendingOwner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol:29",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Ownable": [
+            {
+              "contract": "OwnableUpgradeable",
+              "label": "_owner",
+              "type": "t_address",
+              "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:24",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "d60ae49bf6d0891fd4fdf5486cba56e677688b9757b8c8c49766be8d4343960e": {
+      "address": "0xFdEa47BaA178820993E5C3f051E7fb5f71301776",
+      "txHash": "0x914685a698253bf7b49397c6442d46ac27d9ea7ea6e6ad5392c47f7e5df47ba1",
+      "layout": {
+        "solcVersion": "0.8.29",
+        "storage": [
+          {
+            "label": "_balances",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:18"
+          },
+          {
+            "label": "_minFee",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:19"
+          },
+          {
+            "label": "_allowances",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:21"
+          },
+          {
+            "label": "_name",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_string_storage",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:23"
+          },
+          {
+            "label": "_symbol",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_string_storage",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:24"
+          },
+          {
+            "label": "_decimals",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_uint8",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:25"
+          },
+          {
+            "label": "_totalSupply",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_uint256",
+            "contract": "VRC25Upgradeable",
+            "src": "contracts/vrc25/VRC25Upgradeable.sol:26"
+          },
+          {
+            "label": "_rabbitToken",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_contract(IERC20)942",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:52"
+          },
+          {
+            "label": "_sRabbitToken",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_contract(ISRabbitToken)3207",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:53"
+          },
+          {
+            "label": "_rabbitPerShare",
+            "offset": 0,
+            "slot": "9",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:53"
+          },
+          {
+            "label": "_totalRabbitInPool",
+            "offset": 0,
+            "slot": "10",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:54"
+          },
+          {
+            "label": "_rabbitEmissionPerBlock",
+            "offset": 0,
+            "slot": "11",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:56"
+          },
+          {
+            "label": "_lastRewardBlock",
+            "offset": 0,
+            "slot": "12",
+            "type": "t_uint256",
+            "contract": "RabbitStaker",
+            "src": "contracts/rabbitstaker/RabbitStaker.sol:58"
+          },
+          {
+            "label": "_userWithdrawals",
+            "offset": 0,
+            "slot": "13",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)3325_storage))",
             "contract": "RabbitStaker",
             "src": "contracts/rabbitstaker/RabbitStaker.sol:58"
           },
@@ -1083,7 +1430,7 @@
             "label": "contract IERC20",
             "numberOfBytes": "20"
           },
-          "t_contract(ISRabbitToken)3110": {
+          "t_contract(ISRabbitToken)3207": {
             "label": "contract ISRabbitToken",
             "numberOfBytes": "20"
           },
@@ -1091,7 +1438,7 @@
             "label": "mapping(address => mapping(address => uint256))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)3228_storage))": {
+          "t_mapping(t_address,t_mapping(t_uint256,t_struct(WithdrawalRequest)3325_storage))": {
             "label": "mapping(address => mapping(uint256 => struct IRabbitStaker.WithdrawalRequest))",
             "numberOfBytes": "32"
           },
@@ -1099,7 +1446,7 @@
             "label": "mapping(address => uint256)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_uint256,t_struct(WithdrawalRequest)3228_storage)": {
+          "t_mapping(t_uint256,t_struct(WithdrawalRequest)3325_storage)": {
             "label": "mapping(uint256 => struct IRabbitStaker.WithdrawalRequest)",
             "numberOfBytes": "32"
           },
@@ -1107,7 +1454,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(WithdrawalRequest)3228_storage": {
+          "t_struct(WithdrawalRequest)3325_storage": {
             "label": "struct IRabbitStaker.WithdrawalRequest",
             "members": [
               {

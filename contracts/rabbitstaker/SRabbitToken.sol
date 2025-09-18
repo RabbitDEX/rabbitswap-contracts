@@ -4,9 +4,9 @@ pragma solidity =0.8.29;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IRabbitStaker.sol";
-import "../vrc25/VRC25.sol";
+import "../vrc25/VRC25Permit.sol";
 
-contract SRabbitToken is VRC25, ISRabbitToken {
+contract SRabbitToken is VRC25Permit, ISRabbitToken {
     mapping(address => bool) public minters;
 
     constructor() VRC25('Staked Rabbit Token', 'sRABBIT', 18) {}

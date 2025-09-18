@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.29;
 
-import "../vrc25/VRC25.sol";
+import "../vrc25/VRC25Permit.sol";
 import "../rabbitstaker/interfaces/IRabbitStaker.sol";
 
-contract MockSRabbitToken is VRC25, ISRabbitToken {
+contract MockSRabbitToken is VRC25Permit, ISRabbitToken {
     constructor(string memory name, string memory symbol) VRC25(name, symbol, 18) {}
 
     function mint(address to, uint256 amount) external {

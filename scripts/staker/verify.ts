@@ -23,7 +23,7 @@ async function verifyContracts() {
   try {
     await run("verify:verify", {
       address: sRabbitTokenAddress,
-      constructorArguments: ["Mock Staked Rabbit Token", "msRB"],
+      constructorArguments: [],
       contract: "contracts/rabbitstaker/SRabbitToken.sol:SRabbitToken",
     });
     console.log("✓ SRabbitToken verified successfully");
