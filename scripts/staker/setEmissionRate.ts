@@ -26,11 +26,13 @@
 import { ethers } from "hardhat";
 import { addressFor } from "../metadata";
 
+const isProd = process.env.ENV === "production";
+
 export const SET_EMISSION_RATE = async (newEmissionRate?: string) => {
   console.log("Starting RabbitStaker emission rate update...");
 
   // Read contract address from metadata
-  const proxyAddress = addressFor("MockRabbitStaker_Proxy");
+  const proxyAddress = isProd ? addressFor("RabbitStaker_Proxy") : addressFor("MockRabbitStaker_Proxy");
   console.log("RabbitStaker Proxy:", proxyAddress);
 
   // Get RabbitStaker contract instance
