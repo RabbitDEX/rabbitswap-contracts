@@ -21,6 +21,6 @@
   "RabbitToken": "0x2C664910222BE7b7e203753C59A9667cBe282828",
   "SRabbitToken": "0x62ddC802880c9Dac4914912ced5ACeE7b83e058E",
   "RabbitStaker_Proxy": "0xE000507Ead061a28D2f5c2ced57e756b0Ca0252b",
-  "RabbitStaker_Implementation": "0xf50e28818F7b8220178829b2Efa834e97Be7D65B",
+  "RabbitStaker_Implementation": "0xFdEa47BaA178820993E5C3f051E7fb5f71301776",
   "RabbitStaker_ProxyAdmin": "0xEFFD151e7c3a923ec12539bC1464ADd9a45ed6Bb"
 }
