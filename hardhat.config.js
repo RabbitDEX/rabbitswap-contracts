@@ -21,8 +21,13 @@ const config = {
             chainId: 1337,
         },
         "vic-mainnet": {
-            url: "https://rpc.viction.xyz",
+            chainId: 88,
+            // url: "https://rpc.viction.xyz",
+            url: "https://viction.blockpi.network/v1/rpc/public",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            gas: 8000000,
+            gasPrice: 1000000000, // 1 gwei
+            timeout: 60000,
         },
     },
     typechain: {
